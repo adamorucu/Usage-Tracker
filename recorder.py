@@ -19,6 +19,7 @@ class Recorder(threading.Thread):
       self.OVERTIME_FIELDS = overtime_fields
       self.RESOURCE_LOC = resource_loc
       self.TIME_LOC = time_loc
+      self.prev_io = []
 
    def run(self):
       if not os.path.exists('data'):
@@ -69,8 +70,12 @@ class Recorder(threading.Thread):
          if r_last_update != str(now.strftime("%Y-%m-%d")) + ' ' + str(now.hour) + ':' + str(now.minute):
             print('Update started')
             self.write_resource(self.RESOURCE_LOC[0], resource_data)
-            self.write_overtime_data(
-                'data/overtime.csv', [now.strftime("%Y-%m-%d %H:%M:%S")] + self.io_data())
+            io = self.io_data()
+            if self.prev_io != []:
+               self.write_overtime_data(
+                  'data/overtime.csv', [now.strftime("%Y-%m-%d %H:%M:%S")] + [int(io[i] - self.prev_io[i]) for i in range(4)] + [io[4], io[5]])
+            print(io)
+            self.prev_io = io
             self.update(r_last_update)
 
          time.sleep(self.freq)
@@ -141,15 +146,15 @@ class Recorder(threading.Thread):
 
    def io_data(self):
       net = psutil.net_io_counters()
-      neti, neto = net[0]/1000000, net[1]/1000000
+      neti, neto = net[0]/1000, net[1]/1000
       disk = psutil.disk_io_counters()
-      diski, disko = disk[2]/1000000, disk[3]/1000000
+      diski, disko = disk[2]/1000, disk[3]/1000
       cpu = psutil.cpu_percent()
       ram = round(psutil.virtual_memory()[2], 2)
       return [neti, neto, diski, disko, cpu, ram]
 
    def write_overtime_data(self, file_loc, data):
-
+      print('data', data)
       file_empty = os.stat(file_loc).st_size == 0
       with open(file_loc, 'a', newline='') as file:
          csv_writer = csv.writer(file, delimiter=',')

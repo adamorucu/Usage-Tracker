@@ -64,7 +64,7 @@ class Visualizer(threading.Thread):
 
    def overtime(self, file):
       """Ovetime network, disk_io, cpu, ram"""
-      if len(list(csv.reader(open(file, 'r')))) < 1:
+      if not os.path.exists(file) or len(list(csv.reader(open(file, 'r')))) < 1:
          return False
       overtime = {}
       with open(file, 'r') as f:
@@ -103,7 +103,7 @@ class Visualizer(threading.Thread):
    def overtime_time(self, file):
       """Overtime time spent on each application"""
       print('time')
-      if len(list(csv.reader(open(file, 'r')))) < 1:
+      if not os.path.exists(file) or len(list(csv.reader(open(file, 'r')))) < 1:
          return False
       overtime = {}
       print(file, 'file')
@@ -112,22 +112,18 @@ class Visualizer(threading.Thread):
          next(csv_reader)
          print(csv_reader)
          for (name, time, timestamp) in csv_reader:
-            print(timestamp)
-            print(timestamp[11:14])
             times = timestamp[11:14] + \
                 '00' if int(timestamp[14:16]) < 30 else timestamp[11:14] + '30'
-            if times not in overtime.keys():
-               overtime[times] = []
-            overtime[times].append((name, time))
+            if name not in overtime.keys():
+               overtime[name] = {}
+            overtime[name][times] = float(time) + float(overtime[name].get(times) if overtime[name].get(times, 'empty') != 'empty' else 0)
       print(overtime)
-      print('---------', [key for key in overtime.keys()])
-      ts = []
+      
+      ts, tm = [], []
       for key in overtime.keys():
-         print(key)
-         for i in range(len(overtime[key])):
-            print(i)
-            ts.append([overtime[key][i][0], overtime[key][i][1]])
-      print('----', ts)
+         ts.append([t for t in overtime[key].keys()])
+         tm.append([overtime[key][t] for t in overtime[key].keys()])
+      return [key for key in overtime.keys()], ts, tm
 
    def date_data(self, date):
       now = dt.now()
