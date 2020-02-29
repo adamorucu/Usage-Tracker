@@ -1,15 +1,12 @@
-import webbrowser
 import win32api
 import win32gui
 import win32con
 import sys
 import os
-import threading
 
-class Taskbar(threading.Thread):
-   def __init__ (self):
-      threading.Thread.__init__(self)
-      self.daemon = True
+
+class TraskBar:
+   def __init__(self):
       restart_message = win32gui.RegisterWindowMessage('TaskBar Created')
       message_map = {restart_message: self.restart,
                      win32con.WM_DESTROY: self.destroy,
@@ -33,14 +30,10 @@ class Taskbar(threading.Thread):
       # Create the Window.
       style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
       self.hwnd = win32gui.CreateWindow(wc.lpszClassName, "Taskbar Demo", style,
-                                          0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
-                                          0, 0, hinst, None)
+                                        0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
+                                        0, 0, hinst, None)
       win32gui.UpdateWindow(self.hwnd)
       self.create_icon()
-      win32gui.PumpMessages()
-
-   def run(self):
-      print('taskbar started')
 
    def create_icon(self):
       # Try and find a custom icon
@@ -60,7 +53,11 @@ class Taskbar(threading.Thread):
         try:
             win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
         except win32gui.error:
-           print('sum error')
+            # This is common when windows is starting, and this code is hit
+            # before the taskbar has been created.
+            print("Failed to add the taskbar icon - is explorer running?")
+            # but keep running anyway - when explorer starts, we get the
+            # TaskbarCreated message.
 
    def restart(self, hwnd, msg, wparam, lparam):
       self.create_icon()
@@ -74,11 +71,10 @@ class Taskbar(threading.Thread):
       if lparam == win32con.WM_LBUTTONUP:
          print("You clicked me.")
       elif lparam == win32con.WM_LBUTTONDBLCLK:
-         print("You double-clicked me - goodbye")
+         # print("You double-clicked me - goodbye")
          win32gui.DestroyWindow(self.hwnd)
-         sys.exit()
       elif lparam == win32con.WM_RBUTTONUP:
-         print("You right clicked me.")
+         # print("You right clicked me.")
          menu = win32gui.CreatePopupMenu()
          win32gui.AppendMenu(menu, win32con.MF_STRING, 1023, "Dashboard")
          # win32gui.AppendMenu( menu, win32con.MF_STRING, 1024, "Say Hello")
@@ -89,14 +85,21 @@ class Taskbar(threading.Thread):
          win32gui.TrackPopupMenu(
              menu, win32con.TPM_LEFTALIGN, pos[0], pos[1], 0, self.hwnd, None)
          win32gui.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
-         sys.exit()
       return 1
 
    def command(self, hwnd, msg, wparam, lparam):
       id = win32api.LOWORD(wparam)
       if id == 1023:
-         webbrowser.open('http://127.0.0.1:8050')
+         import webbrowser
+         webbrowser.open('http://127.0.0.1:8050/')
+         win32gui.DestroyWindow(self.hwnd)
       elif id == 1024:
+         print("Goodbye")
          win32gui.DestroyWindow(self.hwnd)
       else:
          print("Unknown command -", id)
+
+
+if __name__ == '__main__':
+   w = TraskBar()
+   win32gui.PumpMessages()

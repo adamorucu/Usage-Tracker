@@ -4,13 +4,15 @@ import dash_html_components as html
 from collections import deque
 import plotly.graph_objs as go
 from datetime import datetime as dt
+from threading import Thread
+import win32gui
 
 import sys, os
 import time
 
 from recorder import Recorder
 from visualizer import Visualizer
-from taskbar import Taskbar
+from taskbar import TraskBar
 
 RESOURCE_FIELDS = ['name', 'cpu', 'ram', 'counter', 'timestamp']
 FG_TIME_FIELDS = ['name', 'time', 'timestamp']
@@ -31,6 +33,9 @@ if __name__ == '__main__':
       rec.start()
       print('Recording started')
 
+      # t = TraskBar()
+      # win32gui.PumpMessages()
+
       vis = Visualizer(RESOURCE_LOC, TIME_LOC)
       
       app = dash.Dash(__name__, external_stylesheets=EXT_STYLE)
@@ -48,16 +53,16 @@ if __name__ == '__main__':
                   date=str(dt.now()),
                   display_format='MMM Do YYYY'
                )
-            ]),
-            dcc.Dropdown(
-               id='date_type',
-               options=[
-                  {'label': 'Single Date', 'value': 'single'},
-                  {'label': 'Multiple Dates', 'value': 'multiple'},
-               ],
-               value='single',
-               clearable=False
-            )
+            ])#,
+            # dcc.Dropdown(
+            #    id='date_type',
+            #    options=[
+            #       {'label': 'Single Date', 'value': 'single'},
+            #       {'label': 'Multiple Dates', 'value': 'multiple'},
+            #    ],
+            #    value='single',
+            #    clearable=False
+            # )
          ], style={'columnCount': 2}),
          html.Div(id='totaltime'),
          html.Div(id='time', style={'columnCount': 2}),
@@ -106,12 +111,14 @@ if __name__ == '__main__':
       def update(date):
          print('len date', len(date))
          print('date', date)
-
-         timespent, res_used, overt_data = vis.all_data(date)
+         data = vis.all_data(date)
+         if data == False:
+            return html.H2('No Data Available for this Date', style={'textAlign': 'center', 'marginTop': 100}), html.Div(), html.Div(), html.Div()
+         timespent, res_used, overt_data, overt_time = data
          total_time, names4times, times = timespent
          [name_cpu, cpu], [name_ram, ram] = res_used
          [ot_timestamp, netin, netout, diskin, diskout, ot_cpu, ot_ram] = overt_data
-
+         ott_names, ott_timestamps, ott_times = overt_time
          time_graphs = []
          resource_graphs = []
          overtime_graphs = []  
@@ -128,7 +135,7 @@ if __name__ == '__main__':
                }
             )
          )
-         ott_names, ott_timestamps, ott_times = vis.overtime_time('data/hourly_fg_time.csv')
+         
          time_graphs.append(
             dcc.Graph(
                id='overtime_time',
@@ -136,7 +143,7 @@ if __name__ == '__main__':
                   'data': [
                      {'x': ott_timestamps[ind], 'y': ott_times[ind], 'type': 'bar', 'name': name} for ind, name in enumerate(ott_names)
                   ],
-                  'layout' : {'barmode': 'stack'}
+                  'layout' : {'barmode': 'stack', 'xaxis': {'categororder': 'category ascending'}}
                }
             )
          )
@@ -182,32 +189,35 @@ if __name__ == '__main__':
 
          overtime_graphs.append(
             dcc.Graph(
-               id='ot_ram_cpu',
+               id='ot_network',
                figure={
                   'data': [
-                     {'x': ot_timestamp, 'y': netin, 'type': 'blinear', 'name': 'Download'},
-                     {'x': ot_timestamp, 'y': netout, 'type': 'blinear', 'name': 'Upload'}
+                     {'x': ot_timestamp, 'y': netin, 'type': 'blinear', 'name': 'Upload'},
+                     {'x': ot_timestamp, 'y': netout, 'type': 'blinear', 'name': 'Download'}
                   ],
-                   'layout': {'title': 'Network', 'yaxis': {'title': 'Read/Write (MB)'}}
+                   'layout': {'title': 'Network', 'yaxis': {'title': 'Read/Write (byte)'}}
                }
             )
          )
          overtime_graphs.append(
             dcc.Graph(
-               id='ot_ram_cpu',
+               id='ot_disk',
                figure={
                   'data': [
                      {'x': ot_timestamp, 'y': diskin, 'type': 'blinear', 'name': 'Write'},
                      {'x': ot_timestamp, 'y': diskout, 'type': 'blinear', 'name': 'Read'}
                   ],
-                  'layout': {'title': 'Disk', 'yaxis': {'title': 'Read/Write (MB)'}}
+                  'layout': {'title': 'Disk', 'yaxis': {'title': 'Read/Write (byte)'}}
                }
             )
          )
 
          return tot_time, time_graphs, resource_graphs, overtime_graphs
 
-      app.run_server(debug=True)
+      t = TraskBar()
+      win32gui.PumpMessages()
+      app.run_server(debug=False)
+      
 
    except KeyboardInterrupt:
       print('BREAK')

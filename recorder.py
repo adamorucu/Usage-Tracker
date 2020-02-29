@@ -154,18 +154,15 @@ class Recorder(threading.Thread):
       return [neti, neto, diski, disko, cpu, ram]
 
    def write_overtime_data(self, file_loc, data):
-      print('data', data)
       file_empty = os.stat(file_loc).st_size == 0
       with open(file_loc, 'a', newline='') as file:
          csv_writer = csv.writer(file, delimiter=',')
          if file_empty:
             csv_writer.writerow(self.OVERTIME_FIELDS)
-         print(data)
          csv_writer.writerow(data)
 
    def write_resource(self, file_loc, data):
       """Writes given resource data to provided location"""
-
       file_empty = os.stat(file_loc).st_size == 0
       with open(file_loc, 'a', newline='') as file:
          csv_writer = csv.writer(file, delimiter=',')
@@ -177,7 +174,6 @@ class Recorder(threading.Thread):
 
    def write_fg_win(self, file_loc, data):
       """Writes given time data to provided location"""
-
       file_empty = os.stat(file_loc).st_size == 0
       with open(file_loc, 'a', newline='') as file:
          csv_writer = csv.writer(file, delimiter=',')
@@ -209,7 +205,7 @@ class Recorder(threading.Thread):
 
    def transfer_resources(self, location_pairs):
       """Transfer resource data from one location to another. Input provided in pairs"""
-
+      
       for from_loc, to_loc in location_pairs:
          if os.stat(from_loc).st_size != 0 and len(list(csv.reader(open(from_loc, 'r')))) > 1: #TODO: maybe remove the first statement?
             # if to_loc == 'data/minutely_resources.csv':

@@ -60,10 +60,12 @@ class Visualizer(threading.Thread):
          'cpu', ascending=False).head(10)
       ram = df[['name', 'ram', 'counter']].sort_values(
          'ram', ascending=False).head(10)
-      return [list(cpu.name), [list(cpu.cpu)[i]/list(cpu.counter)[i] for i in range(10)]], [list(ram.name), [list(ram.ram)[i]/list(ram.counter)[i] for i in range(10)]]
+      return [list(cpu.name), [list(cpu.cpu)[i]/(4*list(cpu.counter)[i]) for i in range(10)]], [list(ram.name), [list(ram.ram)[i]/list(ram.counter)[i] for i in range(10)]]
 
    def overtime(self, file):
       """Ovetime network, disk_io, cpu, ram"""
+      print('--'*8)
+      print(file)
       if not os.path.exists(file) or len(list(csv.reader(open(file, 'r')))) < 1:
          return False
       overtime = {}
@@ -102,7 +104,7 @@ class Visualizer(threading.Thread):
       
    def overtime_time(self, file):
       """Overtime time spent on each application"""
-      print('time')
+      print('time', file)
       if not os.path.exists(file) or len(list(csv.reader(open(file, 'r')))) < 1:
          return False
       overtime = {}
@@ -133,11 +135,12 @@ class Visualizer(threading.Thread):
          overt_data = self.overtime('data/overtime.csv')
 
          ts = self.time_spent(self.TIME_LOC)
+         ott = self.overtime_time(f'data/hourly_fg_time.csv')
          
-         if ts == False or res_used == False or overt_data == False:
+         if ts == False or res_used == False or overt_data == False or ott == False:
             return False
          else:
-            return ts, res_used, overt_data
+            return ts, res_used, overt_data, ott
 
       else:
          custom_date = date[:4] + date[5:7] + date[8:10]
@@ -146,11 +149,11 @@ class Visualizer(threading.Thread):
              ['data/daily/resources_' + custom_date + '.csv'])
          ts = self.time_spent(['data/daily/fg_time_' + custom_date + '.csv'])
          ot = self.overtime(f'data/daily/overtime_{custom_date}.csv')
-
-         if ts == False or res_used == False or ot == False:
+         ott = self.overtime_time(f'data/daily/fg_time_{custom_date}.csv')
+         if ts == False or res_used == False or ot == False or ott == False:
             return False
          else:
-            return ts, res_used, ot
+            return ts, res_used, ot, ott
 
    def all_data(self, date_range):
       #TODO: cpu / 4
@@ -158,4 +161,5 @@ class Visualizer(threading.Thread):
       #    return self.date_data(date_range)
       # else:
       #    #TODO: 
+      print('--', self.date_data(date_range))
       return self.date_data(date_range)
