@@ -171,9 +171,6 @@ class TestVisualizer(unittest.TestCase):
       res = vis1.overtime('test/data/display_overtime.csv')
       
       self.assertEqual((['2019-11-27 22:08:01', '2019-11-27 23:08:01'],['5','16'],['26','43'],['4547','2664'],['1244','1794'],['25.9','31.9'],['68.7','86.7']), res)
-
-   def test_ovetime_time(self):
-
       
 
 
